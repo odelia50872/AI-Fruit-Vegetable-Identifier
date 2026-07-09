@@ -266,6 +266,20 @@ HEADER_HTML = """
   if (p.document.getElementById('fscan-header')) {
     p.document.querySelectorAll('#fscan-header .nav-btn').forEach(function(b) {
       b.classList.toggle('active', b.getAttribute('href') === '?page=CURRENT_PAGE');
+      var newB = b.cloneNode(true);
+      b.parentNode.replaceChild(newB, b);
+      newB.addEventListener('click', function(e) {
+        e.preventDefault();
+        var page = this.getAttribute('href').replace('?page=', '');
+        var target = 'nav:' + page;
+        var found = false;
+        p.document.querySelectorAll('[data-testid="stSidebar"] button').forEach(function(btn) {
+          if (!found && btn.innerText.trim() === target) {
+            btn.dispatchEvent(new MouseEvent('click', {bubbles:true}));
+            found = true;
+          }
+        });
+      });
     });
     return;
   }
@@ -310,7 +324,7 @@ FOOTER_HTML = """
   <i class="bi bi-flower1" style="color:#3fb950"></i>
   <span class="fb">FreshScan</span>
   <span class="fd">&bull;</span>
-  <span>2025</span>
+  <span>2026</span>
   <span class="fd">&bull;</span>
   <span>מערכת זיהוי פירות וירקות בבינה מלאכותית</span>
 </div>

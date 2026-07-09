@@ -72,4 +72,5 @@ def render():
     with col2:
         if st.button("התחל זיהוי", type="primary"):
             st.session_state["page"] = "detect"
+            st.query_params["page"] = "detect"
             st.rerun()

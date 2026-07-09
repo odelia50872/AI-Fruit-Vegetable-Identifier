@@ -23,19 +23,30 @@ def render(model):
     </div>
     """, unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader("בחרו תמונה (jpg, jpeg, png)", type=["jpg", "jpeg", "png"])
+    # הטאבים תמיד נשארים למעלה
+    tab_upload, tab_camera = st.tabs(["📁 העלאת תמונה", "📷 צילום מהמצלמה"])
 
-    if uploaded_file is None:
-        st.markdown("""
-        <div class="status-box status-low" style="text-align:center; padding:32px;">
-            <div style="font-size:2em; margin-bottom:8px"><i class="bi bi-camera" style="color:#58a6ff"></i></div>
-            <div style="font-size:1.05em">העלו תמונה כדי להתחיל</div>
-            <div style="font-weight:400; margin-top:6px; opacity:0.75">תומך בפורמטים: JPG, JPEG, PNG</div>
-        </div>
-        """, unsafe_allow_html=True)
-        return
+    source_file = None
+    with tab_upload:
+        uploaded_file = st.file_uploader("בחרו תמונה (jpg, jpeg, png)", type=["jpg", "jpeg", "png"])
+        if uploaded_file is not None:
+            source_file = uploaded_file
+        else:
+            st.markdown("""
+            <div class="status-box status-low" style="text-align:center; padding:32px;">
+                <div style="font-size:2em; margin-bottom:8px"><i class="bi bi-camera" style="color:#58a6ff"></i></div>
+                <div style="font-size:1.05em">העלו תמונה כדי להתחיל</div>
+                <div style="font-weight:400; margin-top:6px; opacity:0.75">תומך בפורמטים: JPG, JPEG, PNG</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    _process(uploaded_file, model)
+    with tab_camera:
+        camera_file = st.camera_input("צלמו תמונה")
+        if camera_file is not None:
+            source_file = camera_file
+
+    if source_file is not None:
+        _process(source_file, model)
 
 
 def _process(uploaded_file, model):
@@ -63,27 +74,45 @@ def _process(uploaded_file, model):
 
     count, density, items, _, _ = analyze_image_results(results, model.model, topk_per_box)
 
-    if results and len(results) > 0:
-        annotated = Image.fromarray(results[0].plot()[..., ::-1])
-        st.markdown('<div class="section-title">תמונה מסומנת</div>', unsafe_allow_html=True)
-        _, col, _ = st.columns([1, 2, 1])
-        col.image(annotated, use_container_width=True)
+    annotated = Image.fromarray(results[0].plot()[..., ::-1]) if results and len(results) > 0 else None
 
     if count == 0:
+        if annotated:
+            _, col, _ = st.columns([1, 2, 1])
+            col.image(annotated, use_container_width=True)
         render_no_items_message()
         return
 
-    render_density_status(density)
-    st.markdown('<div class="section-title">בחרו את הזיהוי הנכון לכל פריט</div>', unsafe_allow_html=True)
-    _render_selection(items)
-    _render_summary(items)
+    # בדיקה אם כל הפריטים כבר נבחרו
+    all_chosen = all(st.session_state.get(f"chosen_{i}") for i in range(len(items)))
+
+    if not all_chosen:
+        # שלב 2: תמונה + כפתורי בחירה זה לצד זה
+        render_density_status(density)
+        col_img, col_sel = st.columns([1, 1], gap="large")
+        with col_img:
+            st.markdown('<div class="section-title">תמונה מסומנת</div>', unsafe_allow_html=True)
+            if annotated:
+                st.image(annotated, use_container_width=True)
+        with col_sel:
+            st.markdown('<div class="section-title">בחרו את הזיהוי הנכון לכל פריט</div>', unsafe_allow_html=True)
+            _render_selection(items)
+    else:
+        # שלב 3: תמונה קטנה + תוצאות
+        col_img, col_results = st.columns([1, 2], gap="large")
+        with col_img:
+            st.markdown('<div class="section-title">תמונה מסומנת</div>', unsafe_allow_html=True)
+            if annotated:
+                st.image(annotated, use_container_width=True)
+        with col_results:
+            _render_results(items)
+            _render_summary(items)
 
 
 def _render_selection(items):
     for item_idx, (name, data) in enumerate(items.items()):
         cnt = len(data['weights'])
-        avg_box_size = round(sum(data['weights']) / cnt)
-        state_key    = f"chosen_{item_idx}"
+        state_key = f"chosen_{item_idx}"
 
         topk_merged = data.get('topk_merged', {})
         candidates = sorted(
@@ -93,18 +122,19 @@ def _render_selection(items):
         if not candidates:
             candidates = [{"name": name, "conf": 1.0}]
 
-        chosen_name = st.session_state.get(state_key)  # None = טרם נבחר
+        chosen_name = st.session_state.get(state_key)
 
+        em = EMOJI.get(chosen_name or candidates[0]['name'], '🍎')
         st.markdown(f"""
-        <div class="item-card">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
-                <span style="font-size:1.6em">{EMOJI.get(chosen_name or candidates[0]['name'], '🍎')}</span>
+        <div style="background:#161b22; border:1px solid #21262d; border-radius:14px; padding:18px 20px; margin-bottom:14px; border-right:4px solid #3fb950;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                <span style="font-size:1.8em">{em}</span>
                 <div>
                     <div style="color:#e6edf3; font-weight:700; font-size:1.05em">פריט {item_idx + 1}</div>
                     <div style="color:#8b949e; font-size:0.85em">{cnt} יחידות זוהו</div>
                 </div>
             </div>
-            <div style="color:#8b949e; font-size:0.8em; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px">בחרו את הזיהוי הנכון:</div>
+            <div style="color:#8b949e; font-size:0.78em; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">בחרו את הזיהוי הנכון:</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -124,29 +154,37 @@ def _render_selection(items):
                 st.session_state[state_key] = cname
                 st.rerun()
 
-        # מציג פרטים רק אחרי בחירה
-        if chosen_name:
-            chosen_weight = estimate_weight(chosen_name, avg_box_size) * cnt
-            chosen_price  = calculate_price(chosen_name, chosen_weight)
-            qr_img, _     = generate_item_qr(chosen_name, cnt, chosen_weight, chosen_price)
-            heb_chosen    = HEBREW_NAMES.get(chosen_name, chosen_name)
 
-            col_info, col_qr = st.columns([3, 1])
-            with col_info:
-                st.markdown(f"""
-                <div style="margin-top:16px">
-                    <div class="item-stats">
-                        <div class="item-stat"><div class="stat-label">פרי</div><div class="stat-value" style="font-size:1em">{heb_chosen}</div></div>
-                        <div class="item-stat"><div class="stat-label">כמות</div><div class="stat-value">{cnt}</div></div>
-                        <div class="item-stat"><div class="stat-label">משקל</div><div class="stat-value">{chosen_weight}g</div></div>
-                        <div class="item-stat"><div class="stat-label">מחיר</div><div class="stat-value">₪{chosen_price:.2f}</div></div>
-                    </div>
+def _render_results(items):
+    for item_idx, (name, data) in enumerate(items.items()):
+        chosen_name = st.session_state.get(f"chosen_{item_idx}")
+        if not chosen_name:
+            continue
+        cnt          = len(data['weights'])
+        avg_box_size = round(sum(data['weights']) / cnt)
+        chosen_weight = estimate_weight(chosen_name, avg_box_size) * cnt
+        chosen_price  = calculate_price(chosen_name, chosen_weight)
+        qr_img, _     = generate_item_qr(chosen_name, cnt, chosen_weight, chosen_price)
+        heb_chosen    = HEBREW_NAMES.get(chosen_name, chosen_name)
+        em            = EMOJI.get(chosen_name, '🍎')
+
+        col_info, col_qr = st.columns([2, 1])
+        with col_info:
+            st.markdown(f"""
+            <div style="background:#161b22; border:1px solid #21262d; border-radius:14px; padding:18px 20px; margin-bottom:14px; border-right:4px solid #3fb950;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                    <span style="font-size:1.6em">{em}</span>
+                    <div style="color:#e6edf3; font-weight:700; font-size:1.05em">{heb_chosen}</div>
                 </div>
-                """, unsafe_allow_html=True)
-            with col_qr:
-                st.image(f"data:image/png;base64,{image_to_base64(qr_img)}", width=160)
-
-        st.markdown('</div>', unsafe_allow_html=True)
+                <div class="item-stats">
+                    <div class="item-stat"><div class="stat-label">כמות</div><div class="stat-value">{cnt}</div></div>
+                    <div class="item-stat"><div class="stat-label">משקל</div><div class="stat-value">{chosen_weight}g</div></div>
+                    <div class="item-stat"><div class="stat-label">מחיר</div><div class="stat-value">₪{chosen_price:.2f}</div></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col_qr:
+            st.image(f"data:image/png;base64,{image_to_base64(qr_img)}", width=130)
 
 
 def _render_summary(items):
