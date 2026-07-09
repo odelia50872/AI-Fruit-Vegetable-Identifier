@@ -83,7 +83,7 @@ def _render_selection(items):
     for item_idx, (name, data) in enumerate(items.items()):
         cnt = len(data['weights'])
         avg_box_size = round(sum(data['weights']) / cnt)
-        state_key = f"chosen_{item_idx}"
+        state_key    = f"chosen_{item_idx}"
 
         topk_merged = data.get('topk_merged', {})
         candidates = sorted(
@@ -93,21 +93,12 @@ def _render_selection(items):
         if not candidates:
             candidates = [{"name": name, "conf": 1.0}]
 
-        if state_key not in st.session_state:
-            st.session_state[state_key] = name
-
-        chosen_name = st.session_state[state_key]
-        chosen_weight = estimate_weight(chosen_name, avg_box_size) * cnt
-        chosen_price  = calculate_price(chosen_name, chosen_weight)
-        qr_img, _     = generate_item_qr(chosen_name, cnt, chosen_weight, chosen_price)
-
-        emoji_icon = EMOJI.get(chosen_name, '🍎')
-        heb_chosen = HEBREW_NAMES.get(chosen_name, chosen_name)
+        chosen_name = st.session_state.get(state_key)  # None = טרם נבחר
 
         st.markdown(f"""
         <div class="item-card">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
-                <span style="font-size:1.6em">{emoji_icon}</span>
+                <span style="font-size:1.6em">{EMOJI.get(chosen_name or candidates[0]['name'], '🍎')}</span>
                 <div>
                     <div style="color:#e6edf3; font-weight:700; font-size:1.05em">פריט {item_idx + 1}</div>
                     <div style="color:#8b949e; font-size:0.85em">{cnt} יחידות זוהו</div>
@@ -117,7 +108,6 @@ def _render_selection(items):
         </div>
         """, unsafe_allow_html=True)
 
-        # כפתורי בחירה צמודים
         btn_cols = st.columns(len(candidates))
         for col, candidate in zip(btn_cols, candidates):
             cname = candidate['name']
@@ -134,20 +124,27 @@ def _render_selection(items):
                 st.session_state[state_key] = cname
                 st.rerun()
 
-        col_info, col_qr = st.columns([3, 1])
-        with col_info:
-            st.markdown(f"""
-            <div style="margin-top:16px">
-                <div class="item-stats">
-                    <div class="item-stat"><div class="stat-label">פרי</div><div class="stat-value" style="font-size:1em">{heb_chosen}</div></div>
-                    <div class="item-stat"><div class="stat-label">כמות</div><div class="stat-value">{cnt}</div></div>
-                    <div class="item-stat"><div class="stat-label">משקל</div><div class="stat-value">{chosen_weight}g</div></div>
-                    <div class="item-stat"><div class="stat-label">מחיר</div><div class="stat-value">₪{chosen_price:.2f}</div></div>
+        # מציג פרטים רק אחרי בחירה
+        if chosen_name:
+            chosen_weight = estimate_weight(chosen_name, avg_box_size) * cnt
+            chosen_price  = calculate_price(chosen_name, chosen_weight)
+            qr_img, _     = generate_item_qr(chosen_name, cnt, chosen_weight, chosen_price)
+            heb_chosen    = HEBREW_NAMES.get(chosen_name, chosen_name)
+
+            col_info, col_qr = st.columns([3, 1])
+            with col_info:
+                st.markdown(f"""
+                <div style="margin-top:16px">
+                    <div class="item-stats">
+                        <div class="item-stat"><div class="stat-label">פרי</div><div class="stat-value" style="font-size:1em">{heb_chosen}</div></div>
+                        <div class="item-stat"><div class="stat-label">כמות</div><div class="stat-value">{cnt}</div></div>
+                        <div class="item-stat"><div class="stat-label">משקל</div><div class="stat-value">{chosen_weight}g</div></div>
+                        <div class="item-stat"><div class="stat-label">מחיר</div><div class="stat-value">₪{chosen_price:.2f}</div></div>
+                    </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col_qr:
-            st.image(f"data:image/png;base64,{image_to_base64(qr_img)}", width=160)
+                """, unsafe_allow_html=True)
+            with col_qr:
+                st.image(f"data:image/png;base64,{image_to_base64(qr_img)}", width=160)
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -156,15 +153,15 @@ def _render_summary(items):
     total_weight = total_price = chosen_count = 0
     for item_idx, (name, data) in enumerate(items.items()):
         chosen_name = st.session_state.get(f"chosen_{item_idx}")
-        if chosen_name:
-            cnt = len(data['weights'])
-            avg_box_size = round(sum(data['weights']) / cnt)
-            w = estimate_weight(chosen_name, avg_box_size) * cnt
-            total_weight += w
-            total_price  += calculate_price(chosen_name, w)
-            chosen_count += cnt
+        if not chosen_name:
+            continue
+        cnt = len(data['weights'])
+        avg_box_size = round(sum(data['weights']) / cnt)
+        w = estimate_weight(chosen_name, avg_box_size) * cnt
+        total_weight += w
+        total_price  += calculate_price(chosen_name, w)
+        chosen_count += cnt
 
     if chosen_count > 0:
         st.markdown('<div class="section-title">סיכום כללי</div>', unsafe_allow_html=True)
-
         render_metrics(chosen_count, total_weight, total_price)

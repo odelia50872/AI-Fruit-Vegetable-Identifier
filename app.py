@@ -20,11 +20,12 @@ def main():
     if 'page' not in st.session_state:
         st.session_state['page'] = 'home'
 
-    # כפתורי ניווט מוסתרים — ה-header לוחץ עליהם דרך JS
-    if st.button('nav:home',       key='nav_home'):       st.session_state['page'] = 'home';       st.rerun()
-    if st.button('nav:detect',     key='nav_detect'):     st.session_state['page'] = 'detect';     st.rerun()
-    if st.button('nav:price_list', key='nav_price_list'): st.session_state['page'] = 'price_list'; st.rerun()
-    if st.button('nav:about',      key='nav_about'):      st.session_state['page'] = 'about';      st.rerun()
+    # כפתורי ניווט ב-sidebar מוסתר — ה-header לוחץ עליהם דרך JS
+    with st.sidebar:
+        if st.button('nav:home',       key='nav_home'):       st.session_state['page'] = 'home';       st.rerun()
+        if st.button('nav:detect',     key='nav_detect'):     st.session_state['page'] = 'detect';     st.rerun()
+        if st.button('nav:price_list', key='nav_price_list'): st.session_state['page'] = 'price_list'; st.rerun()
+        if st.button('nav:about',      key='nav_about'):      st.session_state['page'] = 'about';      st.rerun()
 
     cur = st.session_state['page']
     components.html(HEADER_HTML.replace('CURRENT_PAGE', cur), height=0)

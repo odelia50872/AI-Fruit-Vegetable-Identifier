@@ -14,7 +14,8 @@ html, body { direction: rtl; background: #0a0e14; margin: 0; padding: 0; }
 [data-testid="stHeader"] { display: none !important; }
 #MainMenu, footer, header { display: none !important; }
 /* הסתרת כפתורי ניווט של streamlit */
-[data-testid="stMainBlockContainer"] > div:first-child button { display: none !important; }
+[data-testid="stSidebar"] { display: none !important; }
+[data-testid="stSidebarCollapsedControl"] { display: none !important; }
 
 [data-testid="stMainBlockContainer"] {
     padding-top: 80px !important;
@@ -282,11 +283,12 @@ HEADER_HTML = """
       var page = this.getAttribute('href').replace('?page=', '');
       var target = 'nav:' + page;
       var found = false;
-      p.document.querySelectorAll('button').forEach(function(btn) {
-        console.log('btn text:', JSON.stringify(btn.innerText));
-        if (btn.innerText.trim() === target) { btn.dispatchEvent(new MouseEvent('click', {bubbles:true})); found = true; }
+      p.document.querySelectorAll('[data-testid="stSidebar"] button').forEach(function(btn) {
+        if (!found && btn.innerText.trim() === target) {
+          btn.dispatchEvent(new MouseEvent('click', {bubbles:true}));
+          found = true;
+        }
       });
-      console.log('looking for:', JSON.stringify(target), 'found:', found);
     });
   });
 })();
