@@ -8,7 +8,7 @@ import math
 from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
-from config.settings import AVERAGE_WEIGHT_GRAMS, REFERENCE_BOX_SIZE, PRICE_PER_KG
+from config.settings import AVERAGE_WEIGHT_GRAMS, PRICE_PER_KG
 
 
 def check_image_quality(image):
@@ -38,12 +38,18 @@ def calculate_price(class_name, weight_grams):
     return round(price_per_kg * weight_kg, 2)
 
 
-def estimate_weight(class_name, box_size_px):
-    """חישוב משקל משוער"""
+def estimate_weight(class_name, box_size_px, box_sizes_same_class=None):
+    """חישוב משקל משוער — דירוג יחסי בין פריטים מאותו סוג"""
     base_weight = AVERAGE_WEIGHT_GRAMS.get(class_name, 150)
-    ref_size = REFERENCE_BOX_SIZE.get(class_name, 170)
-    size_ratio = max(0.5, min(2.5, box_size_px / ref_size))
-    return round(base_weight * size_ratio)
+    if not box_sizes_same_class or len(box_sizes_same_class) == 1:
+        return base_weight
+    min_s, max_s = min(box_sizes_same_class), max(box_sizes_same_class)
+    if max_s == min_s:
+        return base_weight
+    # נרמול בין 0 ל-1 בתוך הקבוצה, ואז מיפוי ל-[0.85, 1.15] מהממוצע
+    ratio = (box_size_px - min_s) / (max_s - min_s)
+    factor = 0.85 + ratio * 0.30
+    return round(base_weight * factor)
 
 
 def analyze_image_results(results, model, topk_per_box=None, conf_threshold=0.15):
@@ -71,17 +77,12 @@ def analyze_image_results(results, model, topk_per_box=None, conf_threshold=0.15
         class_name = model.names.get(int(box.cls[0]), "")
         if class_name not in AVERAGE_WEIGHT_GRAMS:
             continue
-        
-        weight = estimate_weight(class_name, box_size)
-        price = calculate_price(class_name, weight)
-        
-        if class_name not in detected_items:
-            detected_items[class_name] = {'weights': [], 'prices': [], 'topk_merged': {}}
-        
-        detected_items[class_name]['weights'].append(weight)
-        detected_items[class_name]['prices'].append(price)
 
-        # תמיד מוסיפים את הזיהוי הראשי עצמו ראשון
+        if class_name not in detected_items:
+            detected_items[class_name] = {'box_sizes': [], 'weights': [], 'prices': [], 'topk_merged': {}}
+
+        detected_items[class_name]['box_sizes'].append(box_size)
+
         main_conf = float(box.conf[0])
         merged = detected_items[class_name]['topk_merged']
         if class_name not in merged or main_conf > merged[class_name]:
@@ -94,11 +95,19 @@ def analyze_image_results(results, model, topk_per_box=None, conf_threshold=0.15
                 cconf = candidate['conf']
                 if cname not in merged or cconf > merged[cname]:
                     merged[cname] = cconf
-        total_price += price
 
     if fruit_count == 0:
         return 0, None, {}, 0, 0
 
+    # חישוב משקלים לפי דירוג יחסי בתוך כל class
+    for class_name, data in detected_items.items():
+        box_sizes_cls = data['box_sizes']
+        for bs in box_sizes_cls:
+            w = estimate_weight(class_name, bs, box_sizes_cls)
+            data['weights'].append(w)
+            data['prices'].append(calculate_price(class_name, w))
+
+    total_price = sum(sum(item['prices']) for item in detected_items.values())
     total_weight = sum(sum(item['weights']) for item in detected_items.values())
 
     if fruit_count == 1:

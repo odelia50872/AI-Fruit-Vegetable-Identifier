@@ -6,10 +6,10 @@ from PIL import Image
 from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-from src.utils.image_utils import check_image_quality, analyze_image_results, estimate_weight, calculate_price
+from src.utils.image_utils import check_image_quality, analyze_image_results, calculate_price
 from src.utils.barcode_utils import generate_item_qr, image_to_base64
 from src.ui.components import render_metrics, render_density_status, render_error_message, render_no_items_message
-from src.config.settings import HEBREW_NAMES, EMOJI
+from src.config.settings import HEBREW_NAMES, EMOJI, AVERAGE_WEIGHT_GRAMS
 
 
 def render(model):
@@ -161,8 +161,7 @@ def _render_results(items):
         if not chosen_name:
             continue
         cnt          = len(data['weights'])
-        avg_box_size = round(sum(data['weights']) / cnt)
-        chosen_weight = estimate_weight(chosen_name, avg_box_size) * cnt
+        chosen_weight = sum(data['weights']) if chosen_name == name else AVERAGE_WEIGHT_GRAMS.get(chosen_name, 150) * cnt
         chosen_price  = calculate_price(chosen_name, chosen_weight)
         qr_img, _     = generate_item_qr(chosen_name, cnt, chosen_weight, chosen_price)
         heb_chosen    = HEBREW_NAMES.get(chosen_name, chosen_name)
@@ -194,8 +193,7 @@ def _render_summary(items):
         if not chosen_name:
             continue
         cnt = len(data['weights'])
-        avg_box_size = round(sum(data['weights']) / cnt)
-        w = estimate_weight(chosen_name, avg_box_size) * cnt
+        w = sum(data['weights']) if chosen_name == name else AVERAGE_WEIGHT_GRAMS.get(chosen_name, 150) * cnt
         total_weight += w
         total_price  += calculate_price(chosen_name, w)
         chosen_count += cnt
