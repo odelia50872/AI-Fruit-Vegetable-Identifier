@@ -18,7 +18,7 @@ html, body { direction: rtl; background: #0a0e14; margin: 0; padding: 0; }
 [data-testid="stSidebarCollapsedControl"] { display: none !important; }
 
 [data-testid="stMainBlockContainer"] {
-    padding-top: 80px !important;
+    padding-top: 102px !important;
     padding-bottom: 70px !important;
     max-width: 1200px !important;
     margin: 0 auto !important;
@@ -214,7 +214,7 @@ HEADER_HTML = """
   @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@600;700;900&display=swap');
   #fscan-header {
     position: fixed; top: 0; left: 0; right: 0;
-    height: 62px; background: #0d1117;
+    height: 84px; background: #0d1117;
     border-bottom: 1px solid #21262d;
     box-shadow: 0 2px 20px rgba(0,0,0,0.6);
     z-index: 999999;
@@ -225,7 +225,7 @@ HEADER_HTML = """
   }
   #fscan-header .logo {
     display: flex; align-items: center; gap: 10px;
-    font-size: 1.15em; font-weight: 900; color: #fff;
+    font-size: 1.5em; font-weight: 900; color: #fff;
   }
   #fscan-header .logo-icon {
     width: 32px; height: 32px;
@@ -237,10 +237,10 @@ HEADER_HTML = """
   #fscan-header .nav { display: flex; align-items: center; gap: 4px; }
   #fscan-header .nav-btn {
     display: flex; align-items: center; gap: 6px;
-    padding: 7px 14px; border-radius: 8px;
+    padding: 9px 18px; border-radius: 8px;
     border: 1px solid transparent; background: transparent;
     color: #8b949e; font-family: 'Heebo', sans-serif;
-    font-size: 0.9em; font-weight: 600; cursor: pointer;
+    font-size: 1.15em; font-weight: 600; cursor: pointer;
     transition: all 0.18s; direction: rtl; text-decoration: none;
   }
   #fscan-header .nav-btn:hover { background: #161b22; border-color: #30363d; color: #e6edf3; }

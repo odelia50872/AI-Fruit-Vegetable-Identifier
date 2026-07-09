@@ -177,7 +177,7 @@ def _render_results(items):
                 </div>
                 <div class="item-stats">
                     <div class="item-stat"><div class="stat-label">כמות</div><div class="stat-value">{cnt}</div></div>
-                    <div class="item-stat"><div class="stat-label">משקל</div><div class="stat-value">{chosen_weight}g</div></div>
+                    <div class="item-stat"><div class="stat-label">משקל</div><div class="stat-value">{chosen_weight}g</div><div style="color:#8b949e; font-size:0.75em; margin-top:4px">({' + '.join(str(w) + 'g' for w in data['weights'])})</div></div>
                     <div class="item-stat"><div class="stat-label">מחיר</div><div class="stat-value">₪{chosen_price:.2f}</div></div>
                 </div>
             </div>
