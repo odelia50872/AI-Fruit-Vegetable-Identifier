@@ -8,7 +8,7 @@ from src.models.yolo_model import YOLOModel
 from src.ui.styles import MAIN_CSS, HEADER_HTML, FOOTER_HTML
 from src.ui.pages import home, detect, price_list, about
 
-st.set_page_config(page_title='FreshScan', page_icon='🌿', layout='wide', initial_sidebar_state='collapsed')
+st.set_page_config(page_title='FreshScan', page_icon='🥦', layout='wide', initial_sidebar_state='collapsed')
 st.markdown(MAIN_CSS, unsafe_allow_html=True)
 components.html(FOOTER_HTML, height=0)
 
