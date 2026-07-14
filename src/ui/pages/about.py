@@ -1,10 +1,21 @@
 """
-עמוד אודות
+about.py — About Page
+
+Displays project information: system description, model specs,
+technology stack, project structure, and usage instructions.
 """
 import streamlit as st
 
 
 def render():
+    """
+    Render the about page.
+
+    Displays four information cards arranged in a two-column layout:
+      - Left column : project description and model specifications
+      - Right column: technology stack and project directory structure
+    A full-width usage guide card is shown below both columns.
+    """
     st.markdown("""
     <div class="page-header">
         <div class="page-header-icon"><i class="bi bi-info-circle-fill"></i></div>
@@ -17,6 +28,7 @@ def render():
 
     col1, col2 = st.columns(2, gap="large")
 
+    # Left column: what the system does and model technical specs
     with col1:
         st.markdown("""
         <div class="card">
@@ -40,6 +52,7 @@ def render():
         </div>
         """, unsafe_allow_html=True)
 
+    # Right column: technology stack and project file structure
     with col2:
         st.markdown("""
         <div class="card">

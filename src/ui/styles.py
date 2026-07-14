@@ -1,5 +1,11 @@
 """
-עיצוב CSS מרכזי לאפליקציה
+styles.py — Global CSS and HTML Templates
+
+Contains three string constants injected into the Streamlit app via
+st.markdown / components.html:
+  - MAIN_CSS    : full application stylesheet (dark theme, RTL layout)
+  - HEADER_HTML : fixed top navigation bar with JS-driven active state
+  - FOOTER_HTML : fixed bottom footer bar
 """
 
 MAIN_CSS = """

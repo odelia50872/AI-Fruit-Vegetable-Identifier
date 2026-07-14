@@ -1,5 +1,8 @@
 """
-עמוד מחירון
+price_list.py — Price List Page
+
+Displays a searchable, sortable table of all supported fruits and vegetables
+with their per-kg price and average unit weight.
 """
 import streamlit as st
 from pathlib import Path
@@ -9,6 +12,13 @@ from src.config.settings import HEBREW_NAMES, EMOJI, PRICE_PER_KG, AVERAGE_WEIGH
 
 
 def render():
+    """
+    Render the price list page.
+
+    Builds a list of all supported items from HEBREW_NAMES, applies
+    the user's search filter (Hebrew or English), sorts by the selected
+    criterion, and renders the result as an HTML table.
+    """
     st.markdown("""
     <div class="page-header">
         <div class="page-header-icon"><i class="bi bi-list-ul"></i></div>
@@ -27,6 +37,7 @@ def render():
 
     rows = []
     for en_name, he_name in HEBREW_NAMES.items():
+        # Filter: skip items that don't match the search query (case-insensitive)
         if search and search.lower() not in he_name and search.lower() not in en_name.lower():
             continue
         rows.append({
@@ -37,12 +48,13 @@ def render():
             "weight": AVERAGE_WEIGHT_GRAMS.get(en_name, 0),
         })
 
+    # Sort the filtered rows according to the user's selection
     if sort_by == "מחיר נמוך":
         rows.sort(key=lambda x: x["price"])
     elif sort_by == "מחיר גבוה":
         rows.sort(key=lambda x: x["price"], reverse=True)
     else:
-        rows.sort(key=lambda x: x["he"])
+        rows.sort(key=lambda x: x["he"])  # Default: alphabetical by Hebrew name
 
     rows_html = ""
     for r in rows:

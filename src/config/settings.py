@@ -1,20 +1,24 @@
 """
-קובץ קונפיגורציה מרכזי לפרויקט זיהוי פירות וירקות
+settings.py — Central Configuration for FreshScan
+
+Defines all project-wide constants: file paths, model parameters,
+and per-item data (average weights, bounding-box reference sizes,
+Hebrew display names, emojis, and prices per kg).
 """
 from pathlib import Path
 
-# נתיבים
-BASE_DIR = Path(__file__).parent.parent.parent
-MODEL_PATH = BASE_DIR / "best.pt"
-DATA_DIR = BASE_DIR / "data"
-LOGS_DIR = BASE_DIR / "logs"
-MODELS_DIR = BASE_DIR / "models"
+# Paths — resolved relative to this file so the project is location-independent
+BASE_DIR   = Path(__file__).parent.parent.parent
+MODEL_PATH = BASE_DIR / "best.pt"   # Trained YOLOv8 weights
+DATA_DIR   = BASE_DIR / "data"       # Dataset directory (used during training)
+LOGS_DIR   = BASE_DIR / "logs"       # Training logs
+MODELS_DIR = BASE_DIR / "models"     # Additional model checkpoints
 
-# הגדרות מודל
-MODEL_CONFIDENCE = 0.15
-IMAGE_SIZE = 640
+# Model settings
+MODEL_CONFIDENCE = 0.15   # Minimum detection confidence (0–1); lower = more detections
+IMAGE_SIZE       = 640    # Input image size expected by the model (pixels)
 
-# נתוני פירות וירקות
+# Average weight per item (grams) — used as the baseline for weight estimation
 AVERAGE_WEIGHT_GRAMS = {
     "broccoli": 350, "cabbage": 900, "carrot": 120, "cucumber": 250, "eggplant": 300,
     "paprika": 150, "potato": 180, "radish": 50, "tomato": 120, "apple": 180,
@@ -25,6 +29,7 @@ AVERAGE_WEIGHT_GRAMS = {
     "strawberry": 15, "nectarine": 140, "apricot": 50, "peach": 150,
 }
 
+# Reference bounding-box size per class (pixels) — typical box dimension at standard distance
 REFERENCE_BOX_SIZE = {
     "broccoli": 220, "cabbage": 280, "carrot": 160, "cucumber": 200, "eggplant": 190,
     "paprika": 170, "potato": 165, "radish": 100, "tomato": 150, "apple": 170,
@@ -35,6 +40,7 @@ REFERENCE_BOX_SIZE = {
     "strawberry": 50, "nectarine": 160, "apricot": 110, "peach": 165,
 }
 
+# Hebrew display names — maps English class key to Hebrew label shown in the UI
 HEBREW_NAMES = {
     "broccoli": "ברוקולי", "cabbage": "כרוב", "carrot": "גזר", "cucumber": "מלפפון", "eggplant": "חציל",
     "paprika": "פלפל", "potato": "תפוח אדמה", "radish": "צנון", "tomato": "עגבנייה", "apple": "תפוח",
@@ -45,6 +51,7 @@ HEBREW_NAMES = {
     "strawberry": "תות", "nectarine": "נקטרינה", "apricot": "משמש", "peach": "אפרסק",
 }
 
+# Emoji per class — used in UI cards, QR labels, and selection buttons
 EMOJI = {
     "broccoli": "🥦", "cabbage": "🥬", "carrot": "🥕", "cucumber": "🥒", "eggplant": "🍆",
     "paprika": "🫑", "potato": "🥔", "radish": "🌱", "tomato": "🍅", "apple": "🍎",
@@ -55,7 +62,7 @@ EMOJI = {
     "strawberry": "🍓", "nectarine": "🍑", "apricot": "🍑", "peach": "🍑",
 }
 
-# מחירים לק"ג (שקל)
+# Price per kg (ILS) — used to calculate item price from estimated weight
 PRICE_PER_KG = {
     "broccoli": 12.90, "cabbage": 4.50, "carrot": 3.90, "cucumber": 6.90, "eggplant": 8.90,
     "paprika": 15.90, "potato": 2.90, "radish": 5.90, "tomato": 7.90, "apple": 8.90,

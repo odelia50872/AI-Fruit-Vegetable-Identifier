@@ -1,5 +1,8 @@
 """
-דף הבית
+home.py — Home Page
+
+Renders the landing page with the hero banner, system statistics,
+feature cards, and a call-to-action button that navigates to the detect page.
 """
 import streamlit as st
 from pathlib import Path
@@ -8,6 +11,13 @@ sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 
 def render():
+    """
+    Render the home page.
+
+    Displays the hero banner, three system statistics (item types, accuracy,
+    processing speed), six feature cards, a call-to-action card, and a
+    primary button that navigates the user to the detection page.
+    """
     st.markdown("""
     <div class="hero">
         <div class="hero-icon"><i class="bi bi-flower1"></i></div>
@@ -70,7 +80,9 @@ def render():
 
     col1, col2, col3 = st.columns([2, 1, 2])
     with col2:
+        # Center the button using a narrow middle column
         if st.button("התחל זיהוי", type="primary"):
+            # Navigate to the detect page by updating both session state and URL params
             st.session_state["page"] = "detect"
             st.query_params["page"] = "detect"
             st.rerun()

@@ -1,6 +1,19 @@
-זה קוד האימון, חשוב להוסיף אותו לקוד!!
+"""
+train.py — YOLOv8 Model Training Script (Google Colab)
+
+Trains or resumes training of a YOLOv8s model on a custom
+fruit/vegetable dataset stored in Google Drive.
+
+Workflow:
+  1. Mount Google Drive and locate the dataset ZIP file
+  2. Extract the ZIP and find the data.yaml config
+  3. Resume training from the latest checkpoint if one exists,
+     otherwise start a fresh training run from scratch
+  4. Save a checkpoint after every epoch for fault tolerance
+"""
+
 # =====================================================================
-# שלב 1: חיבור ל-Google Drive ובדיקת קבצים
+# Step 1: Mount Google Drive and locate the dataset ZIP
 # =====================================================================
 from google.colab import drive
 import os
@@ -9,40 +22,39 @@ import glob
 
 drive.mount('/content/drive')
 
-# --- בדיקה אוטומטית: מציאת קובץ ה-ZIP שלכן בדרייב ---
-# הקוד יחפש כל קובץ ZIP שקיים בדרייב שלכן שמכיל את המילה dataset
+# Automatically find any ZIP file in the root of Google Drive
 zip_options = glob.glob('/content/drive/MyDrive/dataset.zip') + glob.glob('/content/drive/MyDrive/*.zip')
 
 if not zip_options:
-    raise FileNotFoundError("לא נמצא קובץ ZIP בדרייב. ודאו שהעליתן אותו לתיקייה הראשית בדרייב (My Drive)")
+    raise FileNotFoundError("No ZIP file found in Google Drive. Please upload your dataset ZIP to My Drive.")
 
-# בוחר את ה-ZIP הראשון שנמצא
 ZIP_PATH_IN_DRIVE = zip_options[0]
-print(f"נמצא קובץ ה-ZIP הבא בדרייב: {ZIP_PATH_IN_DRIVE}")
+print(f"Found dataset ZIP: {ZIP_PATH_IN_DRIVE}")
 
 LOCAL_EXTRACT_DIR = '/content/dataset_balanced'
 
 # =====================================================================
-# שלב 2: חילוץ נקי
+# Step 2: Extract the ZIP and locate data.yaml
 # =====================================================================
-print("מחלץ את קובץ ה-ZIP... אנא המתינו...")
+print("Extracting ZIP archive, please wait...")
 with zipfile.ZipFile(ZIP_PATH_IN_DRIVE, 'r') as zip_ref:
     zip_ref.extractall(LOCAL_EXTRACT_DIR)
-print("החילוץ הסתיים!")
+print("Extraction complete.")
 
-# --- איתור אוטומטי של קובץ ה-data.yaml שחולץ ---
+# Recursively search for the YOLO dataset config file
 yaml_search = glob.glob(f"{LOCAL_EXTRACT_DIR}/**/data.yaml", recursive=True)
 if not yaml_search:
-    raise FileNotFoundError("שגיאה: קובץ data.yaml לא נמצא בשום מקום בתוך ה-ZIP שחולץ!")
+    raise FileNotFoundError("data.yaml not found inside the extracted ZIP.")
 
 YAML_PATH = yaml_search[0]
-print(f"קובץ התצורה נמצא בהצלחה בנתיב: {YAML_PATH}")
+print(f"Dataset config found: {YAML_PATH}")
 
-# תיקיית גיבוי קבועה בדרייב
+# Directory in Drive where training checkpoints are backed up
 DRIVE_BACKUP_DIR = '/content/drive/MyDrive/yolo_backup_results'
 os.makedirs(DRIVE_BACKUP_DIR, exist_ok=True)
+
 # =====================================================================
-# שלב 3: המשך אימון המודל (Resume) ושמירה בכל אפוק
+# Step 3: Install Ultralytics if needed, then train or resume
 # =====================================================================
 try:
     import ultralytics
@@ -51,29 +63,25 @@ except ImportError:
 
 from ultralytics import YOLO
 
-# איתור אוטומטי של קובץ ה-last.pt בריצה האחרונה שלכן בדרייב
-# הקוד מחפש את התיקייה האחרונה שנוצרה תחת yolo_balanced_run
-import glob
+# Look for the most recent checkpoint saved in Drive
 backup_runs = glob.glob(f"{DRIVE_BACKUP_DIR}/yolo_balanced_run*/weights/last.pt")
 
 if backup_runs:
-    # לוקח את הריצה האחרונה שנמצאה (למשל yolo_balanced_run-3)
+    # Resume from the latest available checkpoint
     LAST_WEIGHTS_PATH = sorted(backup_runs)[-1]
-    print(f"🔄 נמצא קובץ גיבוי להמשך האימון בנתיב: {LAST_WEIGHTS_PATH}")
+    print(f"Resuming training from checkpoint: {LAST_WEIGHTS_PATH}")
 
-    # טעינת המודל מנקודת העצירה האחרונה
     model = YOLO(LAST_WEIGHTS_PATH)
 
-    print("מתחיל בהמשך אימון המודל (Resume) ושמירה בכל אפוק בודד...")
-
-    # בהמשך אימון (resume) מספיק להגדיר resume=True.
-    # כדי לשנות את תדירות השמירה לכל אפוק, נוסיף גם את save_period=1
+    # resume=True restores epoch count, optimizer state, and hyperparameters
+    # save_period=1 ensures a checkpoint is written after every epoch
     results = model.train(
         resume=True,
         save_period=1
     )
 else:
-    print("⚠️ לא נמצא קובץ last.pt בדרייב. מתחיל אימון חדש מאפס...")
+    # No checkpoint found — start a new training run from the pretrained base
+    print("No checkpoint found. Starting fresh training run...")
     model = YOLO('yolov8s.pt')
 
     results = model.train(
@@ -85,5 +93,5 @@ else:
         project=DRIVE_BACKUP_DIR,
         name='yolo_balanced_run',
         save=True,
-        save_period=1                 # שמירה בכל אפוק בודד מההתחלה
+        save_period=1      # Save a checkpoint after every epoch
     )
